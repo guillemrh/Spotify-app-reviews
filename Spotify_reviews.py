@@ -7,5 +7,5 @@ from matplotlib import colors
 
 #%%
 df = pd.read_csv('../Spotify app reviews/reviews.csv')
-print(df.head())
+df.head()
 # %%

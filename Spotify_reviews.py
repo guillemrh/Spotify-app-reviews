@@ -182,3 +182,4 @@ for word in df['Review'][7].split():
     sentence.append(lemmatizer.lemmatize(word, 'v'))
 print('Lemmatization:')
 print(' '.join(sentence))
+

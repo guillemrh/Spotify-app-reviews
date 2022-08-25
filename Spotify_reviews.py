@@ -183,3 +183,30 @@ for word in df['Review'][7].split():
 print('Lemmatization:')
 print(' '.join(sentence))
 
+#%%
+# Lemmatization
+def cleaning(text):
+    #remove punctuations and uppercase
+    clean_text = text.translate(str.maketrans('','',string.punctuation)).lower()
+    
+    #remove stopwords
+    clean_text = [word for word in clean_text.split() if word not in stopwords.words('english')]
+    
+    #lemmatize the word
+    sentence = []
+    for word in clean_text:
+        lemmatizer = WordNetLemmatizer()
+        sentence.append(lemmatizer.lemmatize(word, 'v'))
+
+    return ' '.join(sentence)
+
+df['Review'] = df['Review'].apply(cleaning)
+
+df['Length'] = df['Review'].apply(len)
+new_length = df['Length'].sum()
+
+print('Total word before cleaning: {}'.format(length))
+print('Total word after cleaning: {}'.format(new_length))
+
+X_train, X_test, y_train, y_test = train_test_split(df['Review'], df['Rating'], test_size=0.2)
+

@@ -1,3 +1,5 @@
+# Kaggle exercise from: https://www.kaggle.com/code/mfaaris/lstm-gru-electra-transformer-models
+
 #%%
 import string
 import numpy as np
@@ -15,8 +17,9 @@ from nltk.stem.snowball import SnowballStemmer
 from nltk.stem.wordnet import WordNetLemmatizer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
-
-
+from keras.preprocessing.text import Tokenizer
+from keras_preprocessing.sequence import pad_sequences
+#%%
 df = pd.read_csv('../Spotify app reviews/reviews.csv')
 df.head()
 df.info()
@@ -131,7 +134,7 @@ plt.axis('off')
 plt.imshow(wc)
 top_words(good)
 # %%
-# Most popular word for netral review
+# Most popular word for neutral review
 neutral = df[df['Rating'] == 'Neutral']['Review']
 
 plt.figure(figsize=(10,10))
@@ -199,7 +202,7 @@ def cleaning(text):
         sentence.append(lemmatizer.lemmatize(word, 'v'))
 
     return ' '.join(sentence)
-
+#%%
 df['Review'] = df['Review'].apply(cleaning)
 
 df['Length'] = df['Review'].apply(len)
@@ -210,3 +213,42 @@ print('Total word after cleaning: {}'.format(new_length))
 
 X_train, X_test, y_train, y_test = train_test_split(df['Review'], df['Rating'], test_size=0.2)
 
+#Building model
+# %%
+tokenizer = Tokenizer(num_words=50000, oov_token='<OOV>')
+
+tokenizer.fit_on_texts(X_train)
+# print(tokenizer.word_index)
+total_word = len(tokenizer.word_index)
+print('Total distinct words: {}'.format(total_word))
+
+train_seq = tokenizer.texts_to_sequences(X_train)
+train_padded = pad_sequences(train_seq)
+
+test_seq = tokenizer.texts_to_sequences(X_test)
+test_padded = pad_sequences(test_seq)
+
+# One hot encoding the label
+lb = LabelBinarizer()
+train_labels = lb.fit_transform(y_train)
+test_labels = lb.transform(y_test)
+
+# %%
+model_lstm = tf.keras.models.Sequential([tf.keras.layers.Embedding(total_word, 8),
+                                    tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(16)),
+                                    tf.keras.layers.Dropout(0.5),
+                                    tf.keras.layers.Dense(16, activation='relu'),
+                                    tf.keras.layers.Dropout(0.5),
+                                    tf.keras.layers.Dense(3, activation='softmax')])
+
+model_lstm.summary()
+
+model_lstm.compile(optimizer=tf.optimizers.Adam(learning_rate=0.0001), loss='categorical_crossentropy', metrics=['accuracy'])
+
+model_lstm.fit(train_padded, train_labels, epochs=25, validation_data=(test_padded, test_labels))
+
+metrics_lstm = pd.DataFrame(model_lstm.history.history)
+metrics_lstm[['accuracy', 'val_accuracy']].plot()
+metrics_lstm[['loss', 'val_loss']].plot()
+
+# %%
